@@ -21,13 +21,14 @@ def main():
     Shot.containers = all, shots
     Alien.containers = all, aliens
     Beam.containers = all, beams
+    Explosion.containers = all
     # スプライトの画像を登録
     Player.image = loader.load_image("player.png")
     Shot.image = loader.load_image("shot.png")
     Beam.image = loader.load_image("beam.png")
-    # エイリアンの画像を分割してロード
-    Alien.images = loader.split_image(loader.load_image("alien.png"))
-
+    # 画像を分割してロード
+    Alien.images = loader.split_image(loader.load_image("alien.png"), 2)
+    Explosion.images = loader.split_image(loader.load_image("explosion.png"), 16)
     # 効果音のロード.
     Player.shot_sound = loader.load_sound("shot.wav")
     Alien.kill_sound = loader.load_sound("kill.wav")
@@ -66,6 +67,7 @@ def collision_detection(player, shots, aliens, beams):
     # alien_collided = pygame.sprite.groupcollide(aliens, shots, False, True)
     for alien in alien_collided.keys():
         Alien.kill_sound.play()
+        Explosion(alien.rect.center)  # エイリアンの中心で爆発
     # プレイヤーとビームの衝突判定
     beam_collided = pygame.sprite.spritecollide(player, beams, True)
     if beam_collided:  # プレイヤーと衝突したビームがあれば
@@ -155,6 +157,24 @@ class Beam(pygame.sprite.Sprite):
         self.rect.move_ip(0, self.speed)  # 下へ移動
         if self.rect.bottom > SCR_RECT.height:  # 下端に達したら除去
             self.kill()
+
+class Explosion(pygame.sprite.Sprite):
+    """爆発エフェクト"""
+    animcycle = 2  # アニメーション速度
+    frame = 0
+    def __init__(self, pos):
+        # imagesとcontainersはmain()でセット
+        pygame.sprite.Sprite.__init__(self, self.containers)
+        self.image = self.images[0]
+        self.rect = self.image.get_rect()
+        self.rect.center = pos
+        self.max_frame = len(self.images) * self.animcycle  # 消滅するフレーム
+    def update(self):
+        # キャラクターアニメーション
+        self.image = self.images[int(self.frame/self.animcycle)]
+        self.frame += 1
+        if self.frame == self.max_frame:
+            self.kill()  # 消滅
 
 if __name__ == "__main__":
     main()
