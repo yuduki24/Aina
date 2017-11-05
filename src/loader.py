@@ -46,15 +46,17 @@ def load_font(fontname, size):
     fontname = os.path.join(parent_dir, fontname)
     return pygame.font.Font(fontname, size)
 
-def split_image(image):
-    """16x44のキャラクターイメージを上の列16x22の2枚のイメージに分割
+def split_image(image, n):
+    """横に長いイメージを同じ大きさのn枚のイメージに分割
     分割したイメージを格納したリストを返す"""
-    imageList = []
-    for i in range(0, 44, 22):
-        surface = pygame.Surface((22,16))
-        surface.blit(image, (0,0), (i,0,22,16))
+    image_list = []
+    w = image.get_width()
+    h = image.get_height()
+    w1 = int(w / n)
+    for i in range(0, w, w1):
+        surface = pygame.Surface((w1,h))
+        surface.blit(image, (0,0), (i,0,w1,h))
         surface.set_colorkey(surface.get_at((0,0)), RLEACCEL)
         surface.convert()
-        imageList.append(surface)
-    return imageList
-     
+        image_list.append(surface)
+    return image_list
