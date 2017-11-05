@@ -12,7 +12,7 @@ class Invader:
     def __init__(self):
         pygame.init()
         screen = pygame.display.set_mode(SCR_RECT.size)
-        pygame.display.set_caption(u"Invader 07 ゲームオーバー画面")
+        pygame.display.set_caption(u"Invader Game")
         # 素材のロード
         self.load_images()
         self.load_sounds()
@@ -89,18 +89,18 @@ class Invader:
         elif self.game_state == GAMECLEAR:  # ゲームクリア画面.
             # GAME OVERを描画
             gameclear_font = loader.load_font("ipag.ttf", 100)
-            gameclear = gameclear_font.render("GAME CLEAR", False, (0,255,255))
+            gameclear = gameclear_font.render("うんちうんちうんち", False, (0,255,255))
             screen.blit(gameclear, ((SCR_RECT.width-gameclear.get_width())/2, 100))
             # エイリアンを描画
             alien_image = Alien.images[0]
             screen.blit(alien_image, ((SCR_RECT.width-alien_image.get_width())/2, 200))
             # PUSH STARTを描画
             push_font = loader.load_font("ipag.ttf", 40)
-            push_space = push_font.render("PUSH SPACE KEY", False, (255,0,0))
+            push_space = push_font.render("PUSH ENTER KEY", False, (255,0,0))
             screen.blit(push_space, ((SCR_RECT.width-push_space.get_width())/2, 300))
             # おまけに描画
             unchi_font = loader.load_font("ipag.ttf", 20)
-            unchi = unchi_font.render("うんちうんちうんち", False, (255,255,255))
+            unchi = unchi_font.render("Game Clear!!!", False, (255,255,255))
             screen.blit(unchi, ((SCR_RECT.width-unchi.get_width())/2, 400))
 
     def key_handler(self):
@@ -115,7 +115,11 @@ class Invader:
             elif event.type == KEYDOWN and event.key == K_SPACE:
                 if self.game_state == START:  # スタート画面でスペースを押したとき
                     self.game_state = PLAY
-                elif self.game_state == GAMEOVER or self.game_state == GAMECLEAR:  # ゲームオーバー画面でスペースを押したとき
+                elif self.game_state == GAMEOVER:  # ゲームオーバー画面でスペースを押したとき
+                    self.init_game()  # ゲームを初期化して再開
+                    self.game_state = PLAY
+            elif event.type == KEYDOWN and event.key == K_RETURN:
+                if self.game_state == GAMECLEAR:  # ゲームクリア画面でEnterを押したとき
                     self.init_game()  # ゲームを初期化して再開
                     self.game_state = PLAY
     def collision_detection(self):
@@ -166,7 +170,7 @@ def collision_detection(player, shots, aliens, beams):
         Player.bomb_sound.play()
         # TODO: ゲームオーバー処理
 
-class Player(pygame.sprite.Sprite):
+class Player(pygame.sprite.Sprite): 
     """自機"""
     speed = 5  # 移動速度
     reload_time = 15  # リロード時間
@@ -174,6 +178,7 @@ class Player(pygame.sprite.Sprite):
         # imageとcontainersはmain()でセットされる
         pygame.sprite.Sprite.__init__(self, self.containers)
         self.rect = self.image.get_rect()
+        self.rect.center = SCR_RECT.center
         self.rect.bottom = SCR_RECT.bottom  # プレイヤーが画面の一番下
         self.reload_timer = 0
     def update(self):
@@ -181,21 +186,24 @@ class Player(pygame.sprite.Sprite):
         pressed_keys = pygame.key.get_pressed()
         # 押されているキーに応じてプレイヤーを移動
         if pressed_keys[K_LEFT]:
-            self.rect.move_ip(-self.speed, 0)
+            if self.rect.left > 30:
+                self.rect.move_ip(-self.speed, 0)
         elif pressed_keys[K_RIGHT]:
-            self.rect.move_ip(self.speed, 0)
+            if self.rect.right < SCR_RECT.right-30:
+                self.rect.move_ip(self.speed, 0)
         self.rect.clamp_ip(SCR_RECT)
+
+        self.reload_timer -= 1
         # ミサイルの発射
-        if pressed_keys[K_SPACE]:
-            # リロード時間が0になるまで再発射できない
-            if self.reload_timer > 0:
-                # リロード中
-                self.reload_timer -= 1
-            else:
-                # 発射！！！
-                Player.shot_sound.play()
-                Shot(self.rect.center)  # 作成すると同時にallに追加される
-                self.reload_timer = self.reload_time
+        for event in pygame.event.get():
+            if event.type == KEYDOWN:  # キーを押したとき
+                if event.key == K_SPACE:
+                    # リロード時間が0になるまで再発射できない
+                    if self.reload_timer < 0:
+                        # 発射！！！
+                        Player.shot_sound.play()
+                        Shot(self.rect.center)  # 作成すると同時にallに追加される
+                        self.reload_timer = self.reload_time
 
 class Shot(pygame.sprite.Sprite):
     """プレイヤーが発射するミサイル"""
@@ -212,11 +220,13 @@ class Shot(pygame.sprite.Sprite):
 
 class Alien(pygame.sprite.Sprite):
     """エイリアン"""
-    speed = 2  # 移動速度
-    animcycle = 18  # アニメーション速度
+    speed = 1  # 移動速度
+    animcycle = 36  # アニメーション速度
     frame = 0
     move_width = 230  # 横方向の移動範囲
     prob_beam = 0.005  # ビームを発射する確率
+    reverse_count = 1
+    level = 1
     def __init__(self, pos):
         # imagesとcontainersはmain()でセット
         pygame.sprite.Sprite.__init__(self, self.containers)
@@ -230,6 +240,16 @@ class Alien(pygame.sprite.Sprite):
         self.rect.move_ip(self.speed, 0)
         if self.rect.center[0] < self.left or self.rect.center[0] > self.right:
             self.speed = -self.speed
+            self.reverse_count += 1
+        if 4 <= self.reverse_count:
+            self.reverse_count = 0
+            self.level += 1
+            self.prob_beam += 0.005
+            if self.speed > 0:
+                self.speed += 1
+            elif self.speed < 0 :
+                self.speed -= 1
+            self.rect.move_ip(self.speed, 10)
         # ビームを発射
         if random.random() < self.prob_beam:
             Beam(self.rect.center)
