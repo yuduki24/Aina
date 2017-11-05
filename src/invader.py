@@ -13,17 +13,20 @@ def main():
     
     # スプライトグループを作成して登録
     all = pygame.sprite.RenderUpdates()
+    aliens = pygame.sprite.Group()  # エイリアングループ
+    shots = pygame.sprite.Group()   # ミサイルグループ
     Player.containers = all
-    Shot.containers = all
-    Alien.containers = all
+    Shot.containers = all, shots
+    Alien.containers = all, aliens
     # スプライトの画像を登録
     Player.image = loader.load_image("player.png")
     Shot.image = loader.load_image("shot.png")
     # エイリアンの画像を分割してロード
     Alien.images = loader.split_image(loader.load_image("alien.png"))
 
-    # 発射音のロード.
+    # 効果音のロード.
     Player.shot_sound = loader.load_sound("shot.wav")
+    Alien.kill_sound = loader.load_sound("kill.wav")
     # 自機を作成
     Player()
     # エイリアンを作成
@@ -39,6 +42,7 @@ def main():
         all.update()
         all.draw(screen)
         pygame.display.update()
+        collision_detection(shots, aliens)
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
@@ -46,6 +50,17 @@ def main():
             elif event.type == KEYDOWN and event.key == K_ESCAPE:
                 pygame.quit()
                 sys.exit()
+
+def collision_detection(shots, aliens):
+    """衝突判定"""
+    # エイリアンとミサイルの衝突判定
+    alien_collided = pygame.sprite.groupcollide(aliens, shots, True, True)
+    # # 貫通弾（Alienは消滅するがShotは消滅しない）
+    # alien_collided = pygame.sprite.groupcollide(aliens, shots, True, False)
+    # # 無敵のエイリアン（エイリアンは消滅しないがShotは消滅する
+    # alien_collided = pygame.sprite.groupcollide(aliens, shots, False, True)
+    for alien in alien_collided.keys():
+        Alien.kill_sound.play()
 
 class Player(pygame.sprite.Sprite):
     """自機"""
