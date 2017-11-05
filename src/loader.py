@@ -20,7 +20,7 @@ def load_image(filename, colorkey=None):
         if colorkey is -1:
             colorkey = image.get_at((0,0))
         image.set_colorkey(colorkey, RLEACCEL)
-    return image, image.get_rect()
+    return image
 
 def load_sound(filename):
     current_dir = os.path.abspath(os.path.dirname(sys.argv[0]))  # スクリプトのディレクトリ
@@ -45,3 +45,16 @@ def load_font(fontname, size):
     fontname = os.path.join("font", fontname)
     fontname = os.path.join(parent_dir, fontname)
     return pygame.font.Font(fontname, size)
+
+def split_image(image):
+    """16x44のキャラクターイメージを上の列16x22の2枚のイメージに分割
+    分割したイメージを格納したリストを返す"""
+    imageList = []
+    for i in range(0, 44, 22):
+        surface = pygame.Surface((22,16))
+        surface.blit(image, (0,0), (i,0,22,16))
+        surface.set_colorkey(surface.get_at((0,0)), RLEACCEL)
+        surface.convert()
+        imageList.append(surface)
+    return imageList
+     

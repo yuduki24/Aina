@@ -15,13 +15,23 @@ def main():
     all = pygame.sprite.RenderUpdates()
     Player.containers = all
     Shot.containers = all
+    Alien.containers = all
     # スプライトの画像を登録
-    Player.image, Player.rect = loader.load_image("player.png")
-    Shot.image, Shot.rect = loader.load_image("shot.png")
+    Player.image = loader.load_image("player.png")
+    Shot.image = loader.load_image("shot.png")
+    # エイリアンの画像を分割してロード
+    Alien.images = loader.split_image(loader.load_image("alien.png"))
+
+    # 発射音のロード.
     Player.shot_sound = loader.load_sound("shot.wav")
     # 自機を作成
     Player()
-    
+    # エイリアンを作成
+    for i in range(0, 50):
+        x = 20 + int(i % 10) * 40
+        y = 20 + int(i / 10) * 40
+        Alien((x,y)) 
+
     clock = pygame.time.Clock()
     while True:
         clock.tick(60)
@@ -44,6 +54,7 @@ class Player(pygame.sprite.Sprite):
     def __init__(self):
         # imageとcontainersはmain()でセットされる
         pygame.sprite.Sprite.__init__(self, self.containers)
+        self.rect = self.image.get_rect()
         self.rect.bottom = SCR_RECT.bottom  # プレイヤーが画面の一番下
         self.reload_timer = 0
     def update(self):
@@ -73,11 +84,35 @@ class Shot(pygame.sprite.Sprite):
     def __init__(self, pos):
         # imageとcontainersはmain()でセット
         pygame.sprite.Sprite.__init__(self, self.containers)
+        self.rect = self.image.get_rect()
         self.rect.center = pos  # 中心座標をposに
     def update(self):
         self.rect.move_ip(0, -self.speed)  # 上へ移動
         if self.rect.top < 0:  # 上端に達したら除去
             self.kill()
+
+class Alien(pygame.sprite.Sprite):
+    """エイリアン"""
+    speed = 2  # 移動速度
+    animcycle = 18  # アニメーション速度
+    frame = 0
+    move_width = 230  # 横方向の移動範囲
+    def __init__(self, pos):
+        # imagesとcontainersはmain()でセット
+        pygame.sprite.Sprite.__init__(self, self.containers)
+        self.image = self.images[0]
+        self.rect = self.image.get_rect()
+        self.rect.center = pos
+        self.left = pos[0]  # 移動できる左端
+        self.right = self.left + self.move_width  # 移動できる右端
+    def update(self):
+        # 横方向への移動
+        self.rect.move_ip(self.speed, 0)
+        if self.rect.center[0] < self.left or self.rect.center[0] > self.right:
+            self.speed = -self.speed
+        # キャラクターアニメーション
+        self.frame += 1
+        self.image = self.images[int(self.frame/self.animcycle%2)]
 
 if __name__ == "__main__":
     main()
