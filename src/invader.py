@@ -56,40 +56,53 @@ class Invader:
             self.collision_detection()
             # エイリアンをすべて倒したらゲームオーバー
             if len(self.aliens.sprites()) == 0:
-                self.game_state = GAMEOVER
+                self.game_state = GAMECLEAR
     def draw(self, screen):
         """描画"""
         screen.fill((0, 0, 0))
         if self.game_state == START:  # スタート画面
             # タイトルを描画
-            title_font = pygame.font.SysFont(None, 80)
+            title_font = loader.load_font("ipag.ttf", 80)
             title = title_font.render("INVADER GAME", False, (255,0,0))
             screen.blit(title, ((SCR_RECT.width-title.get_width())/2, 100))
             # エイリアンを描画
             alien_image = Alien.images[0]
             screen.blit(alien_image, ((SCR_RECT.width-alien_image.get_width())/2, 200))
             # PUSH STARTを描画
-            push_font = pygame.font.SysFont(None, 40)
+            push_font = loader.load_font("ipag.ttf", 40)
             push_space = push_font.render("PUSH SPACE KEY", False, (255,255,255))
             screen.blit(push_space, ((SCR_RECT.width-push_space.get_width())/2, 300))
-            # クレジットを描画
-            credit_font = pygame.font.SysFont(None, 20)
-            credit = credit_font.render(u"2008 http://pygame.skr.jp", False, (255,255,255))
-            screen.blit(credit, ((SCR_RECT.width-credit.get_width())/2, 380))
         elif self.game_state == PLAY:  # ゲームプレイ画面
             self.all.draw(screen)
         elif self.game_state == GAMEOVER:  # ゲームオーバー画面
             # GAME OVERを描画
-            gameover_font = pygame.font.SysFont(None, 80)
+            gameover_font = loader.load_font("ipag.ttf", 80)
             gameover = gameover_font.render("GAME OVER", False, (255,0,0))
             screen.blit(gameover, ((SCR_RECT.width-gameover.get_width())/2, 100))
             # エイリアンを描画
             alien_image = Alien.images[0]
             screen.blit(alien_image, ((SCR_RECT.width-alien_image.get_width())/2, 200))
             # PUSH STARTを描画
-            push_font = pygame.font.SysFont(None, 40)
+            push_font = loader.load_font("ipag.ttf", 40)
             push_space = push_font.render("PUSH SPACE KEY", False, (255,255,255))
             screen.blit(push_space, ((SCR_RECT.width-push_space.get_width())/2, 300))
+        elif self.game_state == GAMECLEAR:  # ゲームクリア画面.
+            # GAME OVERを描画
+            gameclear_font = loader.load_font("ipag.ttf", 100)
+            gameclear = gameclear_font.render("GAME CLEAR", False, (0,255,255))
+            screen.blit(gameclear, ((SCR_RECT.width-gameclear.get_width())/2, 100))
+            # エイリアンを描画
+            alien_image = Alien.images[0]
+            screen.blit(alien_image, ((SCR_RECT.width-alien_image.get_width())/2, 200))
+            # PUSH STARTを描画
+            push_font = loader.load_font("ipag.ttf", 40)
+            push_space = push_font.render("PUSH SPACE KEY", False, (255,0,0))
+            screen.blit(push_space, ((SCR_RECT.width-push_space.get_width())/2, 300))
+            # おまけに描画
+            unchi_font = loader.load_font("ipag.ttf", 20)
+            unchi = unchi_font.render("うんちうんちうんち", False, (255,255,255))
+            screen.blit(unchi, ((SCR_RECT.width-unchi.get_width())/2, 400))
+
     def key_handler(self):
         """キーハンドラー"""
         for event in pygame.event.get():
@@ -102,7 +115,7 @@ class Invader:
             elif event.type == KEYDOWN and event.key == K_SPACE:
                 if self.game_state == START:  # スタート画面でスペースを押したとき
                     self.game_state = PLAY
-                elif self.game_state == GAMEOVER:  # ゲームオーバー画面でスペースを押したとき
+                elif self.game_state == GAMEOVER or self.game_state == GAMECLEAR:  # ゲームオーバー画面でスペースを押したとき
                     self.init_game()  # ゲームを初期化して再開
                     self.game_state = PLAY
     def collision_detection(self):
