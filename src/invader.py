@@ -2,6 +2,7 @@ import pygame
 from pygame.locals import *
 import os
 import sys
+import random
 import loader
 
 SCR_RECT = Rect(0, 0, 640, 480)
@@ -15,20 +16,24 @@ def main():
     all = pygame.sprite.RenderUpdates()
     aliens = pygame.sprite.Group()  # エイリアングループ
     shots = pygame.sprite.Group()   # ミサイルグループ
+    beams = pygame.sprite.Group()  # エイリアングループ
     Player.containers = all
     Shot.containers = all, shots
     Alien.containers = all, aliens
+    Beam.containers = all, beams
     # スプライトの画像を登録
     Player.image = loader.load_image("player.png")
     Shot.image = loader.load_image("shot.png")
+    Beam.image = loader.load_image("beam.png")
     # エイリアンの画像を分割してロード
     Alien.images = loader.split_image(loader.load_image("alien.png"))
 
     # 効果音のロード.
     Player.shot_sound = loader.load_sound("shot.wav")
     Alien.kill_sound = loader.load_sound("kill.wav")
+    Player.bomb_sound = loader.load_sound("bomb.wav")
     # 自機を作成
-    Player()
+    player = Player()
     # エイリアンを作成
     for i in range(0, 50):
         x = 20 + int(i % 10) * 40
@@ -42,7 +47,7 @@ def main():
         all.update()
         all.draw(screen)
         pygame.display.update()
-        collision_detection(shots, aliens)
+        collision_detection(player, shots, aliens, beams)
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
@@ -51,7 +56,7 @@ def main():
                 pygame.quit()
                 sys.exit()
 
-def collision_detection(shots, aliens):
+def collision_detection(player, shots, aliens, beams):
     """衝突判定"""
     # エイリアンとミサイルの衝突判定
     alien_collided = pygame.sprite.groupcollide(aliens, shots, True, True)
@@ -61,6 +66,11 @@ def collision_detection(shots, aliens):
     # alien_collided = pygame.sprite.groupcollide(aliens, shots, False, True)
     for alien in alien_collided.keys():
         Alien.kill_sound.play()
+    # プレイヤーとビームの衝突判定
+    beam_collided = pygame.sprite.spritecollide(player, beams, True)
+    if beam_collided:  # プレイヤーと衝突したビームがあれば
+        Player.bomb_sound.play()
+        # TODO: ゲームオーバー処理
 
 class Player(pygame.sprite.Sprite):
     """自機"""
@@ -112,6 +122,7 @@ class Alien(pygame.sprite.Sprite):
     animcycle = 18  # アニメーション速度
     frame = 0
     move_width = 230  # 横方向の移動範囲
+    prob_beam = 0.005  # ビームを発射する確率
     def __init__(self, pos):
         # imagesとcontainersはmain()でセット
         pygame.sprite.Sprite.__init__(self, self.containers)
@@ -125,9 +136,25 @@ class Alien(pygame.sprite.Sprite):
         self.rect.move_ip(self.speed, 0)
         if self.rect.center[0] < self.left or self.rect.center[0] > self.right:
             self.speed = -self.speed
+        # ビームを発射
+        if random.random() < self.prob_beam:
+            Beam(self.rect.center)
         # キャラクターアニメーション
         self.frame += 1
         self.image = self.images[int(self.frame/self.animcycle%2)]
+
+class Beam(pygame.sprite.Sprite):
+    """エイリアンが発射するビーム"""
+    speed = 5  # 移動速度
+    def __init__(self, pos):
+        # imageとcontainersはmain()でセット
+        pygame.sprite.Sprite.__init__(self, self.containers)
+        self.rect = self.image.get_rect()
+        self.rect.center = pos
+    def update(self):
+        self.rect.move_ip(0, self.speed)  # 下へ移動
+        if self.rect.bottom > SCR_RECT.height:  # 下端に達したら除去
+            self.kill()
 
 if __name__ == "__main__":
     main()
